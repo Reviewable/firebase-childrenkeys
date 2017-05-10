@@ -1,0 +1,32 @@
+{
+  "name": "firebase-childrenkeys",
+  "version": "0.1.0",
+  "description": "Adds a childrenKeys() method to Firebase that fetches children keys via the REST API",
+  "main": "index.js",
+  "engines": {
+    "node": ">=6.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/pkaminski/firebase-childrenkeys.git"
+  },
+  "keywords": [
+    "Firebase",
+    "shallow",
+    "REST",
+    "keys"
+  ],
+  "author": "Piotr Kaminski <piotr@ideanest.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/pkaminski/firebase-childrenkeys/issues"
+  },
+  "homepage": "https://github.com/pkaminski/firebase-childrenkeys",
+  "dependencies": {
+    "firebase": "^2.2",
+    "request": "^2.81.0"
+  }
+}
