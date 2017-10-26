@@ -26,6 +26,8 @@ Firebase.prototype.childrenKeys = function(options) {
           setTimeout(tryRequest, options.retryInterval || 1000);
         } else if (error) {
           reject(error);
+        } else if (data === null || data === undefined) {
+          resolve([]);
         } else {
           resolve(Object.keys(JSON.parse(data)));
         }
