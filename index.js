@@ -6,7 +6,8 @@ const request = require('request');
  * Fetches the keys of the current reference's children without also fetching all the contents,
  * using the Firebase REST API.
  * 
- * @param options An options object with the following items, all optional:
+ * @param {Reference} ref A Firebase database reference.
+ * @param {object} options An options object with the following items, all optional:
  *   - accessToken: a Google OAuth2 access token to pass to the REST API.
  *   - maxTries: the maximum number of times to try to fetch the keys, in case of transient errors
  *               (defaults to 1)
