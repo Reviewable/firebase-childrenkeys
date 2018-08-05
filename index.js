@@ -1,22 +1,22 @@
 'use strict';
 
-const Firebase = require('firebase');
 const request = require('request');
 
 /**
- * Tries to fetch they keys of all the children of this node, without also fetching all the
- * contents, using the Firebase REST API.
+ * Fetches the keys of the current reference's children without also fetching all the contents,
+ * using the Firebase REST API.
+ * 
  * @param options An options object with the following items, all optional:
- *   - auth: an auth token to pass to the REST API
+ *   - accessToken: a Google OAuth2 access token to pass to the REST API.
  *   - maxTries: the maximum number of times to try to fetch the keys, in case of transient errors
  *               (defaults to 1)
  *   - retryInterval: the number of milliseconds to delay between retries (defaults to 1000)
  * @return A promise that resolves to an array of key strings.
  */
-Firebase.prototype.childrenKeys = function(options) {
-  const uri = this.toString() + '.json';
+module.exports = (ref, options = {}) => {
+  const uri = ref.toString() + '.json';
   const qs = {shallow: true};
-  if (options.auth) qs.auth = options.auth;
+  if (options.accessToken) qs.access_token = options.accessToken;
   return new Promise((resolve, reject) => {
     let tries = 0;
     function tryRequest() {
@@ -27,8 +27,18 @@ Firebase.prototype.childrenKeys = function(options) {
         } else if (error) {
           reject(error);
         } else {
-          const object = JSON.parse(data);
-          resolve(object ? Object.keys(object) : []);
+          try {
+            const object = JSON.parse(data);
+            if (object.error === 'Permission denied') {
+              reject(
+                new Error('Failed to fetch children keys from Firebase REST API: Permission denied')
+              );
+            } else {
+              resolve(object ? Object.keys(object) : []);
+            }
+          } catch (error) {
+            reject(error);
+          }
         }
       });
     }

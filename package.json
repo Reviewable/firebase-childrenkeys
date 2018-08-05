@@ -1,13 +1,13 @@
 {
   "name": "firebase-childrenkeys",
-  "version": "0.1.2",
-  "description": "Adds a childrenKeys() method to Firebase that fetches children keys via the REST API",
+  "version": "1.0.0",
+  "description": "Fetch children keys of Firebase Database References via the REST API",
   "main": "index.js",
   "engines": {
     "node": ">=6.0"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node tests/runner.js"
   },
   "repository": {
     "type": "git",
@@ -26,7 +26,14 @@
   },
   "homepage": "https://github.com/pkaminski/firebase-childrenkeys",
   "dependencies": {
-    "firebase": "^2.2",
     "request": "^2.81.0"
+  },
+  "peerDependencies": {
+    "firebase-admin": "5.x.x"
+  },
+  "devDependencies": {
+    "firebase-admin": "5.x.x",
+    "googleapis": "^32.0.0",
+    "lodash": "^4.17.10"
   }
 }
