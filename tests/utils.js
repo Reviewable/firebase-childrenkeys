@@ -34,15 +34,14 @@ module.exports.fetchAccessToken = () => {
   );
 
   // Fetch the Google OAuth2 access token.
-  return new Promise((resolve, reject) => {
-    jwtClient.authorize((error, tokens) => {
-      if (error) {
-        reject(new Error(`Error making request to generate access token: ${error.toString()}`));
-      } else if (tokens.access_token === null) {
-        reject(new Error(`Provided service account does not have permission to generate access tokens`));
-      } else {
-        resolve(tokens.access_token);
+  return jwtClient.authorize()
+    .then((tokens) => {
+      if (tokens.access_token === null) {
+        return Promise.reject(
+          new Error(`Provided service account does not have permission to generate access tokens`)
+        );
       }
+
+      return tokens.access_token;
     });
-  });
 }
