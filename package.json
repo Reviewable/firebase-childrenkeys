@@ -1,6 +1,6 @@
 {
   "name": "firebase-childrenkeys",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Fetch children keys of Firebase Database References via the REST API",
   "main": "index.js",
   "engines": {
@@ -33,7 +33,6 @@
   },
   "devDependencies": {
     "firebase-admin": "5.x.x",
-    "googleapis": "^32.0.0",
     "lodash": "^4.17.10"
   }
 }
