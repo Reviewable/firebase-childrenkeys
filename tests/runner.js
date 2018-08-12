@@ -1,7 +1,6 @@
 const _ = require('lodash');
 const assert = require('assert');
 
-const utils = require('./utils');
 const admin = require('./loadFirebase');
 const childrenKeys = require('../index.js');
 
@@ -22,11 +21,7 @@ const rootRef = admin.database().ref();
 const testRef = rootRef.child('childrenKeys');
 
 testRef.set(mockData)
-  .then(() => {
-    return childrenKeys(testRef, {})
-  })
-  .then(() => utils.fetchAccessToken())
-  .then((accessToken) => childrenKeys(testRef, {accessToken}))
+  .then(() => childrenKeys(testRef))
   .then((keys) => {
     assert(_.isEqual(keys.sort(), Object.keys(mockData).sort()), 'Children keys should return top-level keys');
 
