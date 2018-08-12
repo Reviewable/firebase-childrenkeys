@@ -27,7 +27,9 @@ module.exports = (ref, options = {}) => {
     );
   }
 
-  return ref.database.app.options.credential.getAccessToken()
+  // The database property exists on admin.database.Reference, but not admin.database.Query. Doing
+  // ref.ref ensures we are dealing with an admin.database.Reference instance.
+  return ref.ref.database.app.options.credential.getAccessToken()
     .then((accessTokenObj) => {
       const uri = ref.toString() + '.json';
       const qs = {
