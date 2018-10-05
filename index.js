@@ -5,7 +5,7 @@ const request = require('request');
 /**
  * Fetches the keys of the current reference's children without also fetching all the contents,
  * using the Firebase REST API.
- * 
+ *
  * @param {Reference} ref A Firebase database reference.
  * @param {object} options An options object with the following items, all optional:
  *   - maxTries: the maximum number of times to try to fetch the keys, in case of transient errors
@@ -15,7 +15,8 @@ const request = require('request');
  */
 module.exports = (ref, options = {}) => {
   const refIsNonNullObject = typeof ref === 'object' && ref !== null;
-  if (!refIsNonNullObject || typeof ref.ref !== 'object' || typeof ref.ref.transaction !== 'function') {
+  if (!refIsNonNullObject || typeof ref.ref !== 'object' ||
+      typeof ref.ref.transaction !== 'function') {
     throw new Error(
       `Expected first argument passed to childrenKeys() to be a Firebase Database reference, but
       got "${ref}".`
@@ -34,13 +35,13 @@ module.exports = (ref, options = {}) => {
       const uri = ref.toString() + '.json';
       const qs = {
         shallow: true,
-        access_token: accessTokenObj.access_token,
+        access_token: accessTokenObj.access_token,  // eslint-disable-line camelcase
       };
       return new Promise((resolve, reject) => {
         let tries = 0;
         function tryRequest() {
           tries++;
-          request({uri, qs}, function(error, response, data) {
+          request({uri, qs}, (error, response, data) => {
             if (error && options.maxTries && tries < options.maxTries) {
               setTimeout(tryRequest, options.retryInterval || 1000);
             } else if (error) {
@@ -49,19 +50,19 @@ module.exports = (ref, options = {}) => {
               try {
                 const object = JSON.parse(data);
                 if (object.error === 'Permission denied') {
-                  reject(
-                    new Error('Failed to fetch children keys from Firebase REST API: Permission denied')
+                  reject(new Error(
+                    'Failed to fetch children keys from Firebase REST API: Permission denied')
                   );
                 } else {
                   resolve(object ? Object.keys(object) : []);
                 }
-              } catch (error) {
-                reject(error);
+              } catch (e) {
+                reject(e);
               }
             }
           });
         }
         tryRequest();
       });
-    })
+    });
 };

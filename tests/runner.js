@@ -1,3 +1,5 @@
+'use strict';
+
 const _ = require('lodash');
 const assert = require('assert');
 
@@ -15,7 +17,7 @@ const mockData = {
   },
 };
 
-console.log(`[INFO] Running tests...`)
+console.log(`[INFO] Running tests...`);
 
 const rootRef = admin.database().ref();
 const testRef = rootRef.child('childrenKeys');
@@ -23,7 +25,10 @@ const testRef = rootRef.child('childrenKeys');
 testRef.set(mockData)
   .then(() => childrenKeys(testRef))
   .then((keys) => {
-    assert(_.isEqual(keys.sort(), Object.keys(mockData).sort()), 'Children keys should return top-level keys');
+    assert(
+      _.isEqual(keys.sort(), Object.keys(mockData).sort()),
+      'Children keys should return top-level keys'
+    );
 
     console.log(`[INFO] All tests passed!`);
     process.exit(0);
