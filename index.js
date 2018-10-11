@@ -49,7 +49,7 @@ module.exports = (ref, options = {}) => {
             } else {
               try {
                 const object = JSON.parse(data);
-                if (object.error === 'Permission denied') {
+                if (object && object.error === 'Permission denied') {
                   reject(new Error(
                     'Failed to fetch children keys from Firebase REST API: Permission denied')
                   );
