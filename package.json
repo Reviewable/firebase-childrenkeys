@@ -26,7 +26,7 @@
   },
   "homepage": "https://github.com/pkaminski/firebase-childrenkeys",
   "dependencies": {
-    "request": "^2.81.0"
+    "request": "^2.88.0"
   },
   "peerDependencies": {
     "firebase-admin": "5.x || 6.x || 7.x || 8.x"
