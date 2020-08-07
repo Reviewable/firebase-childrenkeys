@@ -1,6 +1,6 @@
 {
   "name": "firebase-childrenkeys",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "description": "Fetch children keys of Firebase Admin Database References via the REST API",
   "main": "index.js",
   "engines": {
@@ -29,11 +29,11 @@
     "request": "^2.81.0"
   },
   "peerDependencies": {
-    "firebase-admin": "5.x || 6.x || 7.x || 8.x"
+    "firebase-admin": "5.x || 6.x || 7.x || 8.x || 9.x"
   },
   "devDependencies": {
-    "eslint": "^5.6.1",
-    "firebase-admin": "5.x || 6.x || 7.x || 8.x",
+    "eslint": "7.x",
+    "firebase-admin": "5.x || 6.x || 7.x || 8.x || 9.x",
     "lodash": "^4.17.10"
   }
 }
