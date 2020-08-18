@@ -11,6 +11,7 @@ const request = require('request');
  *   - maxTries: the maximum number of times to try to fetch the keys, in case of transient errors
  *               (defaults to 1)
  *   - retryInterval: the number of milliseconds to delay between retries (defaults to 1000)
+ *   - agent: the HTTP(S) agent to use when requesting data.
  * @return A promise that resolves to an array of key strings.
  */
 module.exports = (ref, options = {}) => {
@@ -37,11 +38,12 @@ module.exports = (ref, options = {}) => {
         shallow: true,
         access_token: accessTokenObj.access_token,  // eslint-disable-line camelcase
       };
+      const agent = options.agent;
       return new Promise((resolve, reject) => {
         let tries = 0;
         function tryRequest() {
           tries++;
-          request({uri, qs}, (error, response, data) => {
+          request({uri, qs, agent}, (error, response, data) => {
             if (error && options.maxTries && tries < options.maxTries) {
               setTimeout(tryRequest, options.retryInterval || 1000);
             } else if (error) {

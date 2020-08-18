@@ -18,6 +18,7 @@ The default export is a method with the following signature:
 - `maxRetries` - The maximum number of times to try to fetch the keys, in case of transient errors
   (defaults to `1`).
 - `retryInterval` - The number of milliseconds to delay between retries (defaults to `1000`).
+- `agent` - The HTTP(S) agent to use when requesting data (defaults to none).
 
 ### Return Value
 
