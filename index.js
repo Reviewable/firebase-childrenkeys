@@ -50,14 +50,17 @@ module.exports = (ref, options = {}) => {
               reject(error);
             } else {
               try {
-                const object = JSON.parse(data);
-                if (object && object.error === 'Permission denied') {
-                  reject(new Error(
-                    'Failed to fetch children keys from Firebase REST API: Permission denied')
-                  );
-                } else {
-                  resolve(object ? Object.keys(object) : []);
+                let match;
+                match = data.match(/"error"\s*:\s*"([^"]*)"/);
+                if (match) {
+                  throw new Error(
+                    'Failed to fetch children keys from Firebase REST API: ' + match[1]);
                 }
+                const regex = /"(.*?)"/g;
+                const keys = [];
+                // eslint-disable-next-line no-cond-assign
+                while (match = regex.exec(data)) keys.push(match[1]);  // don't unescape keys!
+                resolve(keys);
               } catch (e) {
                 reject(e);
               }
