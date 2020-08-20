@@ -1,3 +1,5 @@
+'use strict';
+
 module.exports = {
   env: {
     node: true,
@@ -111,7 +113,9 @@ module.exports = {
     'semi-spacing': 'warn',
     'semi-style': 'warn',
     'space-before-blocks': 'warn',
-    'space-before-function-paren': ['warn', 'never'],
+    'space-before-function-paren': [
+      'warn', {anonymous: 'never', named: 'never', asyncArrow: 'always'}
+    ],
     'space-in-parens': 'warn',
     'space-infix-ops': 'warn',
     'space-unary-ops': ['warn', {words: true, nonwords: false}],
