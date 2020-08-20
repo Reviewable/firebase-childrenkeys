@@ -46,7 +46,9 @@ module.exports = async (ref, options = {}) => {
     tries++;
     let data;
     try {
-      const response = await axios.get(uri, {params: qs, agent, responseType: 'text'});
+      const response = await axios.get(uri, {
+        params: qs, agent, responseType: 'text', transformResponse: [x => x]
+      });
       data = response.data;
     } catch (error) {
       if (options.maxTries && tries < options.maxTries) {
