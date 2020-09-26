@@ -1,6 +1,6 @@
 {
   "name": "firebase-childrenkeys",
-  "version": "2.3.1",
+  "version": "2.3.2",
   "description": "Fetch children keys of Firebase Admin Database References via the REST API",
   "main": "index.js",
   "engines": {
@@ -26,7 +26,7 @@
   },
   "homepage": "https://github.com/pkaminski/firebase-childrenkeys",
   "dependencies": {
-    "axios": "^0.19.2",
+    "axios": "^0.20.0",
     "sleep-promise": "^8.0.1"
   },
   "peerDependencies": {
