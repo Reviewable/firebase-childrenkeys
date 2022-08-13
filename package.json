@@ -1,13 +1,14 @@
 {
   "name": "firebase-childrenkeys",
-  "version": "2.3.4",
+  "version": "2.3.5",
   "description": "Fetch children keys of Firebase Admin Database References via the REST API",
   "main": "index.js",
   "engines": {
     "node": ">=8.0"
   },
   "scripts": {
-    "test": "node tests/runner.js"
+    "test": "node tests/runner.js",
+    "update": "yarn upgrade-interactive --latest"
   },
   "repository": {
     "type": "git",
@@ -26,14 +27,14 @@
   },
   "homepage": "https://github.com/pkaminski/firebase-childrenkeys",
   "dependencies": {
-    "axios": "^0.24.0",
+    "axios": "^0.27.2",
     "sleep-promise": "^9.1.0"
   },
   "peerDependencies": {
     "firebase-admin": "5.x || 6.x || 7.x || 8.x || 9.x"
   },
   "devDependencies": {
-    "eslint": "^7.12.1",
-    "firebase-admin": "^9.3.0"
+    "eslint": "^8.21.0",
+    "firebase-admin": "9.3.0"
   }
 }
