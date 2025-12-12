@@ -1,31 +1,28 @@
 {
   "name": "firebase-childrenkeys",
-  "version": "2.6.1",
+  "version": "2.6.2",
   "description": "Fetch children keys of Firebase Admin Database References via the REST API",
   "main": "index.js",
   "engines": {
     "node": ">=8.0"
   },
   "scripts": {
-    "test": "node tests/runner.js",
-    "update": "yarn upgrade-interactive --latest"
+    "update": "yarn upgrade-interactive --latest",
+    "lint": "eslint *.js tests/*.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/pkaminski/firebase-childrenkeys.git"
-  },
+  "repository": "https://github.com/Reviewable/firebase-childrenkeys",
   "keywords": [
     "Firebase",
     "shallow",
     "REST",
     "keys"
   ],
-  "author": "Piotr Kaminski <piotr@ideanest.com>",
+  "author": "Piotr Kaminski <piotr@reviewable.io>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/pkaminski/firebase-childrenkeys/issues"
+    "url": "https://github.com/Reviewable/firebase-childrenkeys/issues"
   },
-  "homepage": "https://github.com/pkaminski/firebase-childrenkeys",
+  "homepage": "https://github.com/Reviewable/firebase-childrenkeys",
   "dependencies": {
     "axios": "^1.2.1",
     "sleep-promise": "^9.1.0"
