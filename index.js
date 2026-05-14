@@ -1,6 +1,5 @@
 'use strict';
 
-const axios = require('axios').default;
 const sleep = require('sleep-promise');
 
 /**
@@ -12,7 +11,6 @@ const sleep = require('sleep-promise');
  *   - maxTries: the maximum number of times to try to fetch the keys, in case of transient errors
  *               (defaults to 1)
  *   - retryInterval: the number of milliseconds to delay between retries (defaults to 1000)
- *   - agent: the HTTP(S) agent to use when requesting data.
  * @return A promise that resolves to an array of key strings.
  */
 module.exports = async (ref, options = {}) => {
@@ -34,22 +32,18 @@ module.exports = async (ref, options = {}) => {
   // ref.ref ensures we are dealing with an admin.database.Reference instance.
   const accessTokenObj = await ref.ref.database.app.options.credential.getAccessToken();
 
-  const uri = ref.toString() + '.json';
-  const qs = {
-    shallow: true,
-    access_token: accessTokenObj.access_token,  // eslint-disable-line camelcase
-  };
-  const agent = options.agent;
+  const url = new URL(ref.toString() + '.json');
+  url.searchParams.set('shallow', 'true');
+  url.searchParams.set('access_token', accessTokenObj.access_token);
   let tries = 0;
 
   async function tryRequest() {
     tries++;
     let data;
     try {
-      const response = await axios.get(uri, {
-        params: qs, agent, responseType: 'text', transformResponse: [x => x]
-      });
-      data = response.data;
+      const response = await fetch(url);
+      data = await response.text();
+      if (!response.ok) throw new Error(`HTTP ${response.status}: ${data}`);
     } catch (error) {
       if (options.maxTries && tries < options.maxTries) {
         await sleep(options.retryInterval || 1000);
