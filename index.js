@@ -28,8 +28,8 @@ module.exports = async (ref, options = {}) => {
     );
   }
 
-  // The database property exists on admin.database.Reference, but not admin.database.Query. Doing
-  // ref.ref ensures we are dealing with an admin.database.Reference instance.
+  // The database property exists on Reference, but not Query. Doing ref.ref ensures we are dealing
+  // with a Reference instance.
   const accessTokenObj = await ref.ref.database.app.options.credential.getAccessToken();
 
   const url = new URL(ref.toString() + '.json');
