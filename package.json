@@ -1,6 +1,6 @@
 {
   "name": "firebase-childrenkeys",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "packageManager": "yarn@4.13.0",
   "description": "Fetch children keys of Firebase Admin Database References via the REST API",
   "main": "index.js",
@@ -10,6 +10,7 @@
   "scripts": {
     "update": "yarn up -R '*' && yarn dedupe --strategy highest",
     "latest": "yarn npm-check-updates -i -m --packageManager yarn --install never && yarn install",
+    "upgrade": "reviewable-upgrade",
     "lint": "eslint *.js tests/*.js"
   },
   "repository": "https://github.com/Reviewable/firebase-childrenkeys",
@@ -33,9 +34,11 @@
   },
   "devDependencies": {
     "assert": "^2.1.0",
-    "eslint": "^8.21.0",
-    "firebase-admin": "^13.7.0",
+    "eslint": "^10.7.0",
+    "firebase-admin": "^14.1.0",
+    "globals": "^17.7.0",
     "lodash": "^4.17.21",
-    "npm-check-updates": "^20.0.0"
+    "npm-check-updates": "^22.2.9",
+    "reviewable-configs": "Reviewable/reviewable-configs#master"
   }
 }

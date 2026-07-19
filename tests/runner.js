@@ -24,7 +24,7 @@ const testRef = rootRef.child('childrenKeys');
 
 testRef.set(mockData)
   .then(() => childrenKeys(testRef))
-  .then((keys) => {
+  .then(keys => {
     assert(
       _.isEqual(keys.sort(), Object.keys(mockData).sort()),
       'Children keys should return top-level keys'
@@ -33,7 +33,7 @@ testRef.set(mockData)
     console.log(`[INFO] All tests passed!`);
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.log(`[ERROR] Tests failed:`, error);
     process.exit(1);
   });

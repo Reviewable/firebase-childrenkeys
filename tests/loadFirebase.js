@@ -15,7 +15,7 @@ if (!fs.existsSync(pathToServiceAccount)) {
 const serviceAccount = require(pathToServiceAccount);
 
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
+  credential: admin.cert(serviceAccount),
   databaseURL: `https://${serviceAccount.project_id}.firebaseio.com`,
 });
 
