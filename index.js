@@ -1,6 +1,6 @@
 'use strict';
 
-const sleep = require('sleep-promise');
+const {setTimeout: sleep} = require('node:timers/promises');
 
 /**
  * Fetches the keys of the current reference's children without also fetching all the contents,
@@ -11,6 +11,7 @@ const sleep = require('sleep-promise');
  *   - maxTries: the maximum number of times to try to fetch the keys, in case of transient errors
  *               (defaults to 1)
  *   - retryInterval: the number of milliseconds to delay between retries (defaults to 1000)
+ *   - timeout: the maximum number of milliseconds for all fetch attempts and retry delays
  * @return A promise that resolves to an array of key strings.
  */
 module.exports = async (ref, options = {}) => {
@@ -26,8 +27,14 @@ module.exports = async (ref, options = {}) => {
       `Expected second argument passed to childrenKeys() to be an options object, but got
       "${options}".`
     );
+  } else if (options.timeout !== undefined &&
+      (typeof options.timeout !== 'number' || !Number.isFinite(options.timeout) ||
+       options.timeout < 0)) {
+    throw new Error(
+      `Expected timeout passed to childrenKeys() to be a non-negative finite number, but got
+      "${options.timeout}".`
+    );
   }
-
   // The database property exists on Reference, but not Query. Doing ref.ref ensures we are dealing
   // with a Reference instance.
   const accessTokenObj = await ref.ref.database.app.options.credential.getAccessToken();
@@ -35,18 +42,41 @@ module.exports = async (ref, options = {}) => {
   const url = new URL(ref.toString() + '.json');
   url.searchParams.set('shallow', 'true');
   url.searchParams.set('access_token', accessTokenObj.access_token);
+  const abortController = new AbortController();
+  let timeoutId;
+  if (options.timeout !== undefined) {
+    const timeoutError = new Error(
+      `Timed out fetching children keys from Firebase REST API after ${options.timeout}ms.`
+    );
+    timeoutError.name = 'TimeoutError';
+    if (options.timeout === 0) {
+      abortController.abort(timeoutError);
+    } else {
+      timeoutId = setTimeout(() => abortController.abort(timeoutError), options.timeout);
+    }
+  }
   let tries = 0;
+
+  async function sleepUntilRetry() {
+    try {
+      await sleep(options.retryInterval || 1000, undefined, {signal: abortController.signal});
+    } catch (error) {
+      if (abortController.signal.aborted) throw abortController.signal.reason;
+      throw error;
+    }
+  }
 
   async function tryRequest() {
     tries++;
     let data;
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, {signal: abortController.signal});
       data = await response.text();
       if (!response.ok) throw new Error(`HTTP ${response.status}: ${data}`);
     } catch (error) {
+      if (abortController.signal.aborted) throw abortController.signal.reason;
       if (options.maxTries && tries < options.maxTries) {
-        await sleep(options.retryInterval || 1000);
+        await sleepUntilRetry();
         return tryRequest();
       }
       throw error;
@@ -61,5 +91,9 @@ module.exports = async (ref, options = {}) => {
     return keys;
   }
 
-  return tryRequest();
+  try {
+    return await tryRequest();
+  } finally {
+    clearTimeout(timeoutId);
+  }
 };
