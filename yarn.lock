@@ -1912,6 +1912,7 @@ __metadata:
     lodash: "npm:^4.17.21"
     npm-check-updates: "npm:^22.2.9"
     reviewable-configs: "Reviewable/reviewable-configs#master"
+    safe-timers: "npm:^1.1.0"
   peerDependencies:
     firebase-admin: 5.x || 6.x || 7.x || 8.x || 9.x || 10.x || 11.x || 12.x || 13.x || 14.x
   languageName: unknown
@@ -3569,6 +3570,13 @@ __metadata:
     es-errors: "npm:^1.3.0"
     is-regex: "npm:^1.2.1"
   checksum: 10c0/f2c25281bbe5d39cddbbce7f86fca5ea9b3ce3354ea6cd7c81c31b006a5a9fff4286acc5450a3b9122c56c33eba69c56b9131ad751457b2b4a585825e6a10665
+  languageName: node
+  linkType: hard
+
+"safe-timers@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "safe-timers@npm:1.1.0"
+  checksum: 10c0/02ec839fd7c18b8fd83df21b2fd90f0a13465fecfd7f8205cff87db49ec27954b9250523f8e14e76ae75329956f0000869933c0e269d8bd30a34568d6a50f4ca
   languageName: node
   linkType: hard
 

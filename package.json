@@ -27,6 +27,9 @@
     "url": "https://github.com/Reviewable/firebase-childrenkeys/issues"
   },
   "homepage": "https://github.com/Reviewable/firebase-childrenkeys",
+  "dependencies": {
+    "safe-timers": "^1.1.0"
+  },
   "peerDependencies": {
     "firebase-admin": "5.x || 6.x || 7.x || 8.x || 9.x || 10.x || 11.x || 12.x || 13.x || 14.x"
   },
