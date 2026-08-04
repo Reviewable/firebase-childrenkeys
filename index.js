@@ -38,10 +38,10 @@ module.exports = async (ref, options = {}) => {
   const abortController = new AbortController();
   let timeoutTimer, timeoutPromise;
   if (options.timeout !== undefined) {
-    const timeoutError = new Error(
-      `Timed out fetching children keys after ${options.timeout}ms.`
+    const timeoutError = new DOMException(
+      `Timed out fetching children keys after ${options.timeout}ms.`,
+      'TimeoutError'
     );
-    timeoutError.name = 'TimeoutError';
     if (options.timeout === 0) {
       abortController.abort(timeoutError);
     } else {

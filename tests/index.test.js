@@ -24,6 +24,7 @@ function makeRef(getAccessToken = async () => ({'access_token': 'token'})) {
 }
 
 function isTimeoutError(error, timeout) {
+  assert.equal(error instanceof DOMException, true);
   assert.equal(error.name, 'TimeoutError');
   assert.match(error.message, new RegExp(`after ${timeout}ms`));
   return true;
