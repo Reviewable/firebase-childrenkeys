@@ -1912,7 +1912,7 @@ __metadata:
     lodash: "npm:^4.17.21"
     npm-check-updates: "npm:^22.2.9"
     reviewable-configs: "Reviewable/reviewable-configs#master"
-    sleep-promise: "npm:^9.1.0"
+    safe-timers: "npm:^1.1.0"
   peerDependencies:
     firebase-admin: 5.x || 6.x || 7.x || 8.x || 9.x || 10.x || 11.x || 12.x || 13.x || 14.x
   languageName: unknown
@@ -3573,6 +3573,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"safe-timers@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "safe-timers@npm:1.1.0"
+  checksum: 10c0/02ec839fd7c18b8fd83df21b2fd90f0a13465fecfd7f8205cff87db49ec27954b9250523f8e14e76ae75329956f0000869933c0e269d8bd30a34568d6a50f4ca
+  languageName: node
+  linkType: hard
+
 "semver@npm:^6.3.1":
   version: 6.3.1
   resolution: "semver@npm:6.3.1"
@@ -3696,13 +3703,6 @@ __metadata:
   version: 4.1.0
   resolution: "signal-exit@npm:4.1.0"
   checksum: 10c0/41602dce540e46d599edba9d9860193398d135f7ff72cab629db5171516cfae628d21e7bfccde1bbfdf11c48726bc2a6d1a8fb8701125852fbfda7cf19c6aa83
-  languageName: node
-  linkType: hard
-
-"sleep-promise@npm:^9.1.0":
-  version: 9.1.0
-  resolution: "sleep-promise@npm:9.1.0"
-  checksum: 10c0/15813898a356d64818d34b437523fe64b0804694730d23201af171e7f3172843d8fcbdc1ba7eea0a0f5b76afa94277a64ef829f22abe3801e3eb2e3915092aa3
   languageName: node
   linkType: hard
 

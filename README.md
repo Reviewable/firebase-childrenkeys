@@ -15,9 +15,12 @@ The default export is a method with the following signature:
 
 `options` is an optional object containing the following configuration options:
 
-- `maxRetries` - The maximum number of times to try to fetch the keys, in case of transient errors
+- `maxTries` - The maximum number of times to try to fetch the keys, in case of transient errors
   (defaults to `1`).
 - `retryInterval` - The number of milliseconds to delay between retries (defaults to `1000`).
+- `timeout` - The maximum number of milliseconds allowed for the overall request, including all
+  fetch attempts and retry delays (defaults to no timeout). Any fetch in progress is aborted when
+  the timeout expires.
 - `agent` - The HTTP(S) agent to use when requesting data (defaults to none).
 
 ### Return Value
@@ -55,8 +58,9 @@ firebaseChildrenKeys(fooRef)
 
 // Fetch all children keys of fooRef, with an optional configuration.
 firebaseChildrenKeys(fooRef, {
-  maxRetries: 5,
+  maxTries: 5,
   retryInterval: 500,
+  timeout: 10000,
 })
   .then((keys) => {
     if (keys.length === 0) {
