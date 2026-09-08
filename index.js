@@ -98,16 +98,17 @@ module.exports = async (ref, options = {}) => {
         }
         throw error;
       }
-      let match;
-      match = data.match(/"error"\s*:\s*"([^"]*)"/);
-      if (match) {
-        throw new Error(`Failed to fetch children keys from Firebase REST API: ${match[1]}`);
+      let parsed;
+      try {
+        parsed = JSON.parse(data);
+      } catch (error) {
+        throw new Error(`Failed to parse children keys response: ${error.message}`, {cause: error});
       }
-      const regex = /"(.*?)"/g;
-      const keys = [];
-      // eslint-disable-next-line no-cond-assign
-      while (match = regex.exec(data)) keys.push(match[1]);  // don't unescape keys!
-      return keys;
+      if (parsed && typeof parsed === 'object' && typeof parsed.error === 'string') {
+        throw new Error(`Failed to fetch children keys from Firebase REST API: ${parsed.error}`);
+      }
+      if (parsed === null || typeof parsed !== 'object') return [];
+      return Object.keys(parsed);
     }
 
     return tryRequest();

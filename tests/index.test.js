@@ -30,6 +30,27 @@ function isTimeoutError(error, timeout) {
   return true;
 }
 
+async function fetchKeysFor(actualKeys) {
+  const body = JSON.stringify(Object.fromEntries(actualKeys.map(key => [key, true])));
+  const originalFetch = global.fetch;
+  global.fetch = async () => ({ok: true, status: 200, text: async () => body});
+  try {
+    return await childrenKeys(makeRef());
+  } finally {
+    global.fetch = originalFetch;
+  }
+}
+
+async function fetchKeysForBody(body) {
+  const originalFetch = global.fetch;
+  global.fetch = async () => ({ok: true, status: 200, text: async () => body});
+  try {
+    return await childrenKeys(makeRef());
+  } finally {
+    global.fetch = originalFetch;
+  }
+}
+
 test('timeout covers retry delays', async () => {
   const originalFetch = global.fetch;
   let attempts = 0;
@@ -134,4 +155,50 @@ test('timeout aborts a fetch in progress after earlier retries', async () => {
   } finally {
     global.fetch = originalFetch;
   }
+});
+
+test('returns keys containing double quotes', async () => {
+  assert.deepEqual(await fetchKeysFor(['foo', 'a"b']), ['foo', 'a"b']);
+});
+
+test('returns keys containing backslashes', async () => {
+  assert.deepEqual(await fetchKeysFor(['foo', 'a\\b']), ['foo', 'a\\b']);
+});
+
+test('handles the \\u0022 escape form for double quotes', async () => {
+  assert.deepEqual(await fetchKeysForBody('{"a\\u0022b":true}'), ['a"b']);
+});
+
+test('handles the \\u005C escape form for backslashes', async () => {
+  assert.deepEqual(await fetchKeysForBody('{"a\\u005Cb":true}'), ['a\\b']);
+});
+
+test('treats an `error` child key as a regular key', async () => {
+  assert.deepEqual(await fetchKeysFor(['error', 'foo']), ['error', 'foo']);
+});
+
+test('throws on the Firebase API error envelope', async () => {
+  await assert.rejects(
+    fetchKeysForBody('{"error":"Permission denied"}'),
+    /Failed to fetch children keys from Firebase REST API: Permission denied/
+  );
+});
+
+test('returns an empty array for an empty (null) location', async () => {
+  assert.deepEqual(await fetchKeysForBody('null'), []);
+});
+
+test('returns an empty array for a leaf string location', async () => {
+  assert.deepEqual(await fetchKeysForBody('"hello"'), []);
+});
+
+test('throws on a non-JSON response and preserves the underlying cause', async () => {
+  await assert.rejects(
+    fetchKeysForBody('not valid json'),
+    error => {
+      assert.match(error.message, /Failed to parse children keys response/);
+      assert.equal(error.cause instanceof Error, true);
+      return true;
+    }
+  );
 });
