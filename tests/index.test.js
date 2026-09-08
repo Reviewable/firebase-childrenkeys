@@ -224,13 +224,38 @@ test('throws on a non-JSON response and preserves the underlying cause', async (
 
 test('rejects incomplete entries, skipped input, and trailing data', async () => {
   const bodies = [
-    '{', '{"a"', '{"a":', '{"a":true', '{"a":true,"b":',
-    '{"a":true,bad,"b":true}', '{,"a":true}', '{"a":true,}',
-    '{"a":true "b":true}', '{"a":true} trailing', '{} trailing',
+    ['{', 1, 'expected a complete quoted child key'],
+    ['{"a"', 4, 'expected ":" after the child key'],
+    ['{"a":', 5, 'expected true for a child value or a quoted API error message'],
+    ['{"a":true', 9, 'expected "," or "}" after the child value'],
+    ['{"a":true,"b":', 14, 'expected true for a child value or a quoted API error message'],
+    ['{"a":true,bad,"b":true}', 10, 'expected a complete quoted child key'],
+    ['{,"a":true}', 1, 'expected a complete quoted child key'],
+    ['{"a":true,}', 10, 'expected a complete quoted child key'],
+    ['{"a":true "b":true}', 10, 'expected "," or "}" after the child value'],
+    ['{"a":true} trailing', 11, 'unexpected data after the closing brace'],
+    ['{} trailing', 3, 'unexpected data after the closing brace'],
   ];
-  for (const body of bodies) {
+  for (const [body, position, reason] of bodies) {
     await assert.rejects(fetchKeysForBody(body), error => {
-      assert.match(error.message, /Failed to parse children keys response/);
+      assert.equal(error.message,
+        `Failed to parse children keys response: Invalid shallow response at position ` +
+        `${position}: ${reason}`);
+      assert.equal(error.cause instanceof SyntaxError, true);
+      return true;
+    }, body);
+  }
+});
+
+test('explains invalid shallow response shapes', async () => {
+  const bodies = [
+    ['[true]', 'expected a shallow object or primitive, not an array'],
+    ['{"a":"value"}', 'string values require a single-field "error" envelope'],
+    ['{"error":"message","a":true}', 'string values require a single-field "error" envelope'],
+  ];
+  for (const [body, reason] of bodies) {
+    await assert.rejects(fetchKeysForBody(body), error => {
+      assert.ok(error.message.endsWith(reason), error.message);
       assert.equal(error.cause instanceof SyntaxError, true);
       return true;
     }, body);

@@ -11,19 +11,21 @@ function parseChildrenKeys(data) {
   }
 
   let position = skipWhitespace(0);
-  function invalidResponse() {
-    throw new SyntaxError(`Invalid shallow response at position ${position}`);
+  function throwInvalidResponse(reason) {
+    throw new SyntaxError(`Invalid shallow response at position ${position}: ${reason}`);
   }
 
   if (data[position] !== '{') {
     const value = JSON.parse(data);
-    if (value !== null && typeof value === 'object') invalidResponse();
+    if (value !== null && typeof value === 'object') {
+      throwInvalidResponse('expected a shallow object or primitive, not an array');
+    }
     return [];
   }
   position = skipWhitespace(position + 1);
   if (data[position] === '}') {
     position = skipWhitespace(position + 1);
-    if (position !== data.length) invalidResponse();
+    if (position !== data.length) throwInvalidResponse('unexpected data after the closing brace');
     return [];
   }
 
@@ -33,24 +35,41 @@ function parseChildrenKeys(data) {
   const space = whitespace.source;
   const entry = new RegExp(
     `(${string})${space}:${space}(true|${string})${space}([,}])`, 'y');
+  function throwInvalidEntry() {
+    // Diagnose just the failed entry so successful responses keep using the single regex above.
+    const keyToken = new RegExp(string, 'y');
+    keyToken.lastIndex = position;
+    if (!keyToken.exec(data)) throwInvalidResponse('expected a complete quoted child key');
+    position = skipWhitespace(keyToken.lastIndex);
+    if (data[position] !== ':') throwInvalidResponse('expected ":" after the child key');
+    position = skipWhitespace(position + 1);
+    const valueToken = new RegExp(`true|${string}`, 'y');
+    valueToken.lastIndex = position;
+    if (!valueToken.exec(data)) {
+      throwInvalidResponse('expected true for a child value or a quoted API error message');
+    }
+    position = skipWhitespace(valueToken.lastIndex);
+    throwInvalidResponse('expected "," or "}" after the child value');
+  }
+
   const keys = [];
   for (;;) {
     entry.lastIndex = position;
     const match = entry.exec(data);
-    if (!match) invalidResponse();
+    if (!match) throwInvalidEntry();
     // Keep ordinary keys cheap, and let JSON.parse decode only strings with JSON escapes.
     const key = match[1].includes('\\') ? JSON.parse(match[1]) : match[1].slice(1, -1);
     position = skipWhitespace(entry.lastIndex);
     if (match[2] !== 'true') {
       if (key !== 'error' || keys.length || match[3] !== '}' || position !== data.length) {
-        invalidResponse();
+        throwInvalidResponse('string values require a single-field "error" envelope');
       }
       throw new Error(
         `Failed to fetch children keys from Firebase REST API: ${JSON.parse(match[2])}`);
     }
     keys.push(key);
     if (match[3] === '}') {
-      if (position !== data.length) invalidResponse();
+      if (position !== data.length) throwInvalidResponse('unexpected data after the closing brace');
       return keys;
     }
   }
