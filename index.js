@@ -2,6 +2,60 @@
 
 const timers = require('safe-timers');
 
+function parseChildrenKeys(data) {
+  const whitespace = /[ \t\r\n]*/y;
+  function skipWhitespace(position) {
+    whitespace.lastIndex = position;
+    whitespace.exec(data);
+    return whitespace.lastIndex;
+  }
+
+  let position = skipWhitespace(0);
+  function invalidResponse() {
+    throw new SyntaxError(`Invalid shallow response at position ${position}`);
+  }
+
+  if (data[position] !== '{') {
+    const value = JSON.parse(data);
+    if (value !== null && typeof value === 'object') invalidResponse();
+    return [];
+  }
+  position = skipWhitespace(position + 1);
+  if (data[position] === '}') {
+    position = skipWhitespace(position + 1);
+    if (position !== data.length) invalidResponse();
+    return [];
+  }
+
+  // Shallow children always have true values; the API error envelope has a string value.
+  // eslint-disable-next-line no-control-regex
+  const string = /"(?:[^"\\\x00-\x1f]|\\.)*"/.source;
+  const space = whitespace.source;
+  const entry = new RegExp(
+    `(${string})${space}:${space}(true|${string})${space}([,}])`, 'y');
+  const keys = [];
+  for (;;) {
+    entry.lastIndex = position;
+    const match = entry.exec(data);
+    if (!match) invalidResponse();
+    // Keep ordinary keys cheap, and let JSON.parse decode only strings with JSON escapes.
+    const key = match[1].includes('\\') ? JSON.parse(match[1]) : match[1].slice(1, -1);
+    position = skipWhitespace(entry.lastIndex);
+    if (match[2] !== 'true') {
+      if (key !== 'error' || keys.length || match[3] !== '}' || position !== data.length) {
+        invalidResponse();
+      }
+      throw new Error(
+        `Failed to fetch children keys from Firebase REST API: ${JSON.parse(match[2])}`);
+    }
+    keys.push(key);
+    if (match[3] === '}') {
+      if (position !== data.length) invalidResponse();
+      return keys;
+    }
+  }
+}
+
 /**
  * Fetches the keys of the current reference's children without also fetching all the contents,
  * using the Firebase REST API.
@@ -98,56 +152,14 @@ module.exports = async (ref, options = {}) => {
         }
         throw error;
       }
-      // Parse only the top-level keys of the shallow JSON response incrementally so that we never
-      // need to materialise the full intermediate object, which can exhaust the heap for large
-      // fan-out nodes.
-      const trimmed = data.trimStart();
-      if (!trimmed.startsWith('{')) {
-        // Validate that the response is well-formed JSON (null, string, number, …) and return [].
-        try {
-          JSON.parse(data);
-        } catch (error) {
-          throw new Error(
-            `Failed to parse children keys response: ${error.message}`, {cause: error});
-        }
-        return [];
+      // Validate and extract keys without constructing a full intermediate object for large nodes.
+      try {
+        return parseChildrenKeys(data);
+      } catch (error) {
+        if (!(error instanceof SyntaxError)) throw error;
+        throw new Error(
+          `Failed to parse children keys response: ${error.message}`, {cause: error});
       }
-      // Extract top-level string keys from a JSON object without constructing the object.
-      const keys = [];
-      // Match every JSON string that appears as an object key (preceded by '{' or ',' with
-      // optional whitespace).  The pattern captures the raw string content between the quotes so
-      // that we can decode JSON escape sequences ourselves.
-      const keyPattern = /(?:^{|,)\s*"((?:[^"\\]|\\.)*)"\s*:/gs;
-      let match;
-      while ((match = keyPattern.exec(trimmed)) !== null) {
-        let raw = match[1];
-        // Decode JSON escape sequences in the key.  We only need to handle the sequences that
-        // can appear in Firebase keys: \uXXXX, \", and \\.  Using a targeted replacer avoids
-        // a full JSON.parse while still keeping memory usage proportional to the key length.
-        let key;
-        try {
-          key = JSON.parse('"' + raw + '"');
-        } catch (error) {
-          throw new Error(
-            `Failed to parse children keys response: ${error.message}`, {cause: error});
-        }
-        keys.push(key);
-      }
-      if (keys.length === 1 && keys[0] === 'error') {
-        // Could be a Firebase error envelope — fall back to a full parse to check.
-        let parsed;
-        try {
-          parsed = JSON.parse(data);
-        } catch (error) {
-          throw new Error(
-            `Failed to parse children keys response: ${error.message}`, {cause: error});
-        }
-        if (parsed && typeof parsed === 'object' && typeof parsed.error === 'string') {
-          throw new Error(
-            `Failed to fetch children keys from Firebase REST API: ${parsed.error}`);
-        }
-      }
-      return keys;
     }
 
     return tryRequest();

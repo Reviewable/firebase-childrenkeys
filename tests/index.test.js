@@ -165,6 +165,11 @@ test('returns keys containing backslashes', async () => {
   assert.deepEqual(await fetchKeysFor(['foo', 'a\\b']), ['foo', 'a\\b']);
 });
 
+test('keeps scanning after escaped quotes and trailing backslashes', async () => {
+  const keys = ['a"b', 'a\\', 'a\\"b', 'a\\\\', 'a,:{}b', 'last'];
+  assert.deepEqual(await fetchKeysFor(keys), keys);
+});
+
 test('handles the \\u0022 escape form for double quotes', async () => {
   assert.deepEqual(await fetchKeysForBody('{"a\\u0022b":true}'), ['a"b']);
 });
@@ -175,6 +180,7 @@ test('handles the \\u005C escape form for backslashes', async () => {
 
 test('treats an `error` child key as a regular key', async () => {
   assert.deepEqual(await fetchKeysFor(['error', 'foo']), ['error', 'foo']);
+  assert.deepEqual(await fetchKeysFor(['error']), ['error']);
 });
 
 test('throws on the Firebase API error envelope', async () => {
@@ -182,6 +188,19 @@ test('throws on the Firebase API error envelope', async () => {
     fetchKeysForBody('{"error":"Permission denied"}'),
     /Failed to fetch children keys from Firebase REST API: Permission denied/
   );
+});
+
+test('decodes JSON escapes in Firebase API errors', async () => {
+  const message = 'Cannot read "a\\b"';
+  await assert.rejects(fetchKeysForBody(JSON.stringify({error: message})), error => {
+    assert.equal(error.message, `Failed to fetch children keys from Firebase REST API: ${message}`);
+    return true;
+  });
+});
+
+test('accepts JSON whitespace around entries and an empty object', async () => {
+  assert.deepEqual(await fetchKeysForBody(' \t{\r\n "a" : true , "b" : true \n}\t'), ['a', 'b']);
+  assert.deepEqual(await fetchKeysForBody(' \t{ \r\n } '), []);
 });
 
 test('returns an empty array for an empty (null) location', async () => {
@@ -201,4 +220,29 @@ test('throws on a non-JSON response and preserves the underlying cause', async (
       return true;
     }
   );
+});
+
+test('rejects incomplete entries, skipped input, and trailing data', async () => {
+  const bodies = [
+    '{', '{"a"', '{"a":', '{"a":true', '{"a":true,"b":',
+    '{"a":true,bad,"b":true}', '{,"a":true}', '{"a":true,}',
+    '{"a":true "b":true}', '{"a":true} trailing', '{} trailing',
+  ];
+  for (const body of bodies) {
+    await assert.rejects(fetchKeysForBody(body), error => {
+      assert.match(error.message, /Failed to parse children keys response/);
+      assert.equal(error.cause instanceof SyntaxError, true);
+      return true;
+    }, body);
+  }
+});
+
+test('rejects invalid JSON strings in keys', async () => {
+  for (const body of ['{"a\\q":true}', '{"a\\u002X":true}', '{"a\nb":true}']) {
+    await assert.rejects(fetchKeysForBody(body), error => {
+      assert.match(error.message, /Failed to parse children keys response/);
+      assert.equal(error.cause instanceof SyntaxError, true);
+      return true;
+    }, body);
+  }
 });
