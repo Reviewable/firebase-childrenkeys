@@ -11,8 +11,26 @@ function parseChildrenKeys(data) {
   }
 
   let position = skipWhitespace(0);
-  function throwInvalidResponse(reason) {
-    throw new SyntaxError(`Invalid shallow response at position ${position}: ${reason}`);
+  function throwInvalidResponse(reason, cause) {
+    throw new SyntaxError(`Invalid shallow response at position ${position}: ${reason}`, {cause});
+  }
+
+  function parseString(token, startPosition) {
+    try {
+      return JSON.parse(token);
+    } catch (error) {
+      if (!(error instanceof SyntaxError)) throw error;
+      // Locate invalid escapes only on failure, without relying on engine-specific error messages.
+      const escapes = /\\(?:["\\/bfnrt]|u[0-9a-fA-F]{4})|(\\)/g;
+      let match;
+      while ((match = escapes.exec(token))) {
+        if (!match[1]) continue;
+        position = startPosition + match.index;
+        throwInvalidResponse('invalid JSON escape sequence', error);
+      }
+      position = startPosition;
+      throwInvalidResponse('invalid JSON string', error);
+    }
   }
 
   if (data[position] !== '{') {
@@ -58,14 +76,17 @@ function parseChildrenKeys(data) {
     const match = entry.exec(data);
     if (!match) throwInvalidEntry();
     // Keep ordinary keys cheap, and let JSON.parse decode only strings with JSON escapes.
-    const key = match[1].includes('\\') ? JSON.parse(match[1]) : match[1].slice(1, -1);
+    const key = match[1].includes('\\') ?
+      parseString(match[1], match.index) : match[1].slice(1, -1);
     position = skipWhitespace(entry.lastIndex);
     if (match[2] !== 'true') {
       if (key !== 'error' || keys.length || match[3] !== '}' || position !== data.length) {
         throwInvalidResponse('string values require a single-field "error" envelope');
       }
+      const messagePosition = match.index + match[0].indexOf(match[2], match[1].length);
       throw new Error(
-        `Failed to fetch children keys from Firebase REST API: ${JSON.parse(match[2])}`);
+        `Failed to fetch children keys from Firebase REST API: ` +
+        parseString(match[2], messagePosition));
     }
     keys.push(key);
     if (match[3] === '}') {
@@ -171,6 +192,7 @@ module.exports = async (ref, options = {}) => {
         }
         throw error;
       }
+      // Body read failures above are retryable; malformed JSON in a completed response is not.
       // Validate and extract keys without constructing a full intermediate object for large nodes.
       try {
         return parseChildrenKeys(data);

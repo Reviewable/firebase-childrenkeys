@@ -157,6 +157,47 @@ test('timeout aborts a fetch in progress after earlier retries', async () => {
   }
 });
 
+test('retries a failure while reading the response body', async () => {
+  const originalFetch = global.fetch;
+  let attempts = 0;
+  global.fetch = async () => {
+    const attempt = ++attempts;
+    return {
+      ok: true,
+      status: 200,
+      text: async () => {
+        if (attempt === 1) throw new TypeError('terminated');
+        return '{"key":true}';
+      },
+    };
+  };
+  try {
+    assert.deepEqual(await childrenKeys(makeRef(), {maxTries: 2, retryInterval: 1}), ['key']);
+    assert.equal(attempts, 2);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('does not retry malformed JSON after a successful body read', async () => {
+  const originalFetch = global.fetch;
+  let attempts = 0;
+  global.fetch = async () => {
+    attempts++;
+    return {ok: true, status: 200, text: async () => '{"key":true'};
+  };
+  try {
+    await assert.rejects(childrenKeys(makeRef(), {maxTries: 3, retryInterval: 1}), error => {
+      assert.match(error.message, /Failed to parse children keys response/);
+      assert.equal(error.cause instanceof SyntaxError, true);
+      return true;
+    });
+    assert.equal(attempts, 1);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
 test('returns keys containing double quotes', async () => {
   assert.deepEqual(await fetchKeysFor(['foo', 'a"b']), ['foo', 'a"b']);
 });
@@ -267,6 +308,26 @@ test('rejects invalid JSON strings in keys', async () => {
     await assert.rejects(fetchKeysForBody(body), error => {
       assert.match(error.message, /Failed to parse children keys response/);
       assert.equal(error.cause instanceof SyntaxError, true);
+      return true;
+    }, body);
+  }
+});
+
+test('reports invalid escape positions relative to the complete response', async () => {
+  const cases = [
+    ['{"aaaaaaaaaa":true,"b\\q":true}', '\\q'],
+    [' \n{"first":true,"a\\u0041b\\u002X":true}', '\\u002X'],
+    ['{"a\\\\b\\q":true}', '\\q'],
+    ['{"😀":true,"b\\q":true}', '\\q'],
+    [' \n{ "error" : "message\\q" } ', '\\q'],
+  ];
+  for (const [body, invalidEscape] of cases) {
+    await assert.rejects(fetchKeysForBody(body), error => {
+      assert.equal(error.message,
+        `Failed to parse children keys response: Invalid shallow response at position ` +
+        `${body.indexOf(invalidEscape)}: invalid JSON escape sequence`);
+      assert.equal(error.cause instanceof SyntaxError, true);
+      assert.equal(error.cause.cause instanceof SyntaxError, true);
       return true;
     }, body);
   }
