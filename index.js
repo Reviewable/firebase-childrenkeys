@@ -2,6 +2,100 @@
 
 const timers = require('safe-timers');
 
+function parseChildrenKeys(data) {
+  const whitespace = /[ \t\r\n]*/y;
+  function skipWhitespace(position) {
+    whitespace.lastIndex = position;
+    whitespace.exec(data);
+    return whitespace.lastIndex;
+  }
+
+  let position = skipWhitespace(0);
+  function throwInvalidResponse(reason, cause) {
+    throw new SyntaxError(`Invalid shallow response at position ${position}: ${reason}`, {cause});
+  }
+
+  function parseString(token, startPosition) {
+    try {
+      return JSON.parse(token);
+    } catch (error) {
+      if (!(error instanceof SyntaxError)) throw error;
+      // Locate invalid escapes only on failure, without relying on engine-specific error messages.
+      const escapes = /\\(?:["\\/bfnrt]|u[0-9a-fA-F]{4})|(\\)/g;
+      let match;
+      while ((match = escapes.exec(token))) {
+        if (!match[1]) continue;
+        position = startPosition + match.index;
+        throwInvalidResponse('invalid JSON escape sequence', error);
+      }
+      position = startPosition;
+      throwInvalidResponse('invalid JSON string', error);
+    }
+  }
+
+  if (data[position] !== '{') {
+    const value = JSON.parse(data);
+    if (value !== null && typeof value === 'object') {
+      throwInvalidResponse('expected a shallow object or primitive, not an array');
+    }
+    return [];
+  }
+  position = skipWhitespace(position + 1);
+  if (data[position] === '}') {
+    position = skipWhitespace(position + 1);
+    if (position !== data.length) throwInvalidResponse('unexpected data after the closing brace');
+    return [];
+  }
+
+  // Shallow children always have true values; the API error envelope has a string value.
+  // eslint-disable-next-line no-control-regex
+  const string = /"(?:[^"\\\x00-\x1f]|\\.)*"/.source;
+  const space = whitespace.source;
+  const entry = new RegExp(
+    `(${string})${space}:${space}(true|${string})${space}([,}])`, 'y');
+  function throwInvalidEntry() {
+    // Diagnose just the failed entry so successful responses keep using the single regex above.
+    const keyToken = new RegExp(string, 'y');
+    keyToken.lastIndex = position;
+    if (!keyToken.exec(data)) throwInvalidResponse('expected a complete quoted child key');
+    position = skipWhitespace(keyToken.lastIndex);
+    if (data[position] !== ':') throwInvalidResponse('expected ":" after the child key');
+    position = skipWhitespace(position + 1);
+    const valueToken = new RegExp(`true|${string}`, 'y');
+    valueToken.lastIndex = position;
+    if (!valueToken.exec(data)) {
+      throwInvalidResponse('expected true for a child value or a quoted API error message');
+    }
+    position = skipWhitespace(valueToken.lastIndex);
+    throwInvalidResponse('expected "," or "}" after the child value');
+  }
+
+  const keys = [];
+  for (;;) {
+    entry.lastIndex = position;
+    const match = entry.exec(data);
+    if (!match) throwInvalidEntry();
+    // Keep ordinary keys cheap, and let JSON.parse decode only strings with JSON escapes.
+    const key = match[1].includes('\\') ?
+      parseString(match[1], match.index) : match[1].slice(1, -1);
+    position = skipWhitespace(entry.lastIndex);
+    if (match[2] !== 'true') {
+      if (key !== 'error' || keys.length || match[3] !== '}' || position !== data.length) {
+        throwInvalidResponse('string values require a single-field "error" envelope');
+      }
+      const messagePosition = match.index + match[0].indexOf(match[2], match[1].length);
+      throw new Error(
+        `Failed to fetch children keys from Firebase REST API: ` +
+        parseString(match[2], messagePosition));
+    }
+    keys.push(key);
+    if (match[3] === '}') {
+      if (position !== data.length) throwInvalidResponse('unexpected data after the closing brace');
+      return keys;
+    }
+  }
+}
+
 /**
  * Fetches the keys of the current reference's children without also fetching all the contents,
  * using the Firebase REST API.
@@ -98,16 +192,15 @@ module.exports = async (ref, options = {}) => {
         }
         throw error;
       }
-      let match;
-      match = data.match(/"error"\s*:\s*"([^"]*)"/);
-      if (match) {
-        throw new Error(`Failed to fetch children keys from Firebase REST API: ${match[1]}`);
+      // Body read failures above are retryable; malformed JSON in a completed response is not.
+      // Validate and extract keys without constructing a full intermediate object for large nodes.
+      try {
+        return parseChildrenKeys(data);
+      } catch (error) {
+        if (!(error instanceof SyntaxError)) throw error;
+        throw new Error(
+          `Failed to parse children keys response: ${error.message}`, {cause: error});
       }
-      const regex = /"(.*?)"/g;
-      const keys = [];
-      // eslint-disable-next-line no-cond-assign
-      while (match = regex.exec(data)) keys.push(match[1]);  // don't unescape keys!
-      return keys;
     }
 
     return tryRequest();
