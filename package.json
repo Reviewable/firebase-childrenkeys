@@ -1,7 +1,7 @@
 {
   "name": "firebase-childrenkeys",
   "version": "3.3.1",
-  "packageManager": "yarn@4.13.0",
+  "packageManager": "yarn@4.18.1",
   "description": "Fetch children keys of Firebase Admin Database References via the REST API",
   "main": "index.js",
   "engines": {
